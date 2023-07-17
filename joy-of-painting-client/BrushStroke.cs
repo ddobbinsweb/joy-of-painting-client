@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace joy_of_painting_client
 {
-    public class BrushStroke
+    public class Brushstroke
     {
         public int FromX { get; set; }
         public int FromY { get; set; }
@@ -15,5 +15,6 @@ namespace joy_of_painting_client
         public string Color { get; set; }
         public int Width { get; set; }
         public int Height { get; set; }
+        public int Order { get; set; }
     }
 }

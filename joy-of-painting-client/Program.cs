@@ -1,47 +1,55 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using joy_of_painting_client;
+using joy_of_painting_client.Models;
 using Newtonsoft.Json;
-using System.Drawing;
+
+Console.WriteLine("Joy of Painting!");
+// Get Paintings by Artist or By Category
+Console.WriteLine("Lets get started, would you like to get paintings by Artist or by Category?");
+Console.WriteLine("Artist : 0");
+Console.WriteLine("Category: 1");
+
+// todo make this an input
+string key = "486c153f-e4f0-4657-8ac8-fe3850bb51ad";
 
 
-Console.WriteLine("Hello, World!");
+var getPaitingOption = Console.ReadLine();
+if (getPaitingOption == "0")
+{
+    var artistClient = new BaseClient<List<Artist>>("artist/search",key);
+    // get artists
+    var values = new Dictionary<string, string?>
+  {
+      { "name", null },
+  };
+
+    var content = JsonConvert.SerializeObject(values);
+    var response = await artistClient.Post( values);
+
+    Console.WriteLine(response);
+}
+else
+{
+    // get categories
+}
+
+// get all categories
+
+// output the category options
+
+// ask user for input of which category
+
+// get paintings by category selected
+
+// 
+
 // Specifying a file path
-string path = @"C:\Users\David Dobbins\Pictures\joy-of-painting\8_Dobbins.jpg";
+string path = @"C:\Users\David Dobbins\Pictures\joy-of-painting\8.jpg";
 
+var pixelator = new Pixelator();
 
-Bitmap bitmap;
-using (Stream bmpStream = System.IO.File.Open(path, System.IO.FileMode.Open))
-{
-    Image image = Image.FromStream(bmpStream);
+var strokes = pixelator.PixelateImage(path);
 
-    bitmap = new Bitmap(image);
+var json = JsonConvert.SerializeObject(strokes);
 
-}
-if (bitmap != null)
-{
-    List<BrushStroke> strokes = new List<BrushStroke>();
-    for (int i = 0; i < bitmap.Width; i++)
-    {
-        for (int j = 0; j < bitmap.Height; j++)
-        {
-            Color pixel = bitmap.GetPixel(i, j);
-            BrushStroke stroke = new BrushStroke() { 
-                FromX= ,
-                FromY= ,
-                ToX =,
-                ToY = ,
-                Color = ColorTranslator.ToHtml(pixel),
-                Height= j,
-                Width= i
-            };
-
-            strokes.Add(stroke);
-        }
-    }
-    if(strokes.Count > 0)
-    {
-        var temp = JsonConvert.SerializeObject(strokes);
-        var temp2  = 0;
-    }
-}
-
+var temp = json;

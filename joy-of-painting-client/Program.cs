@@ -1,104 +1,135 @@
-﻿// See https://aka.ms/new-console-template for more information
-using joy_of_painting_client;
+﻿using joy_of_painting_client;
 using joy_of_painting_client.Models;
 using joy_of_painting_client.Responses;
-using Newtonsoft.Json;
-using System.Net;
-using System;
-using System.Runtime.CompilerServices;
-
-Console.WriteLine("Joy of Painting!");
-// Get Paintings by Artist or By Category
-Console.WriteLine("Lets get started, would you like to get paintings by Artist or by Category?");
-Console.Write("Select Artist( 0 ) or Category( 1 ):");
+using Spectre.Console;
 
 
-// todo make this an input
-string key = "486c153f-e4f0-4657-8ac8-fe3850bb51ad";
-var pixelator = new Pixelator();
-
-var getPaitingOption = Console.ReadLine();
-if (getPaitingOption == "0")
+do
 {
-    var artistClient = new BaseClient<ListResponse<Artist>>("artist/search", key);
-    // get artists
-    var values = new Dictionary<string, string?>
-    {
-      { "name", null },
-    };
+    AnsiConsole.WriteLine("Joy of Painting!");
+
+    // TODO: make this an input
+    var pixelator = new Pixelator();
+    string key = AnsiConsole.Prompt(new TextPrompt<string>("[grey][[Optional]][/] [green] What's your api key[/]?")
+                                         .DefaultValue<string>("486c153f-e4f0-4657-8ac8-fe3850bb51ad"));
+
+    var findPaintingOption = AnsiConsole.Prompt(
+        new SelectionPrompt<string>()
+            .Title("[green] How would you like to find a painting  by [/]?")
+            .PageSize(10)
+            .MoreChoicesText("[grey](Move up and down to reveal more options)[/]")
+            .AddChoices("Artist", "Category")
+            );
 
 
-    var response = await artistClient.Post(values);
-    Console.WriteLine("|Id|Name             |# of Paintings|");
-    Console.WriteLine("--------------------------------------");
-    foreach (var item in response.Items.OrderBy(x => x.Id))
+    if (findPaintingOption == "Artist")
     {
-        string artistTable = String.Format("|{0,2}|{1,5}|{2,2}|", item.Id, item.Name, item.Paintings.Count);
-        Console.WriteLine(artistTable);
-    }
-    Console.Write("select artist id:");
-    var artistIdString = Console.ReadLine();
-    if (!string.IsNullOrEmpty(artistIdString) && artistIdString != "0")
-    {
-        var artistId = Int32.Parse(artistIdString);
-        // get artist paintings
-        var artist = response.Items.Find(x => x.Id == artistId);
-        if (artist != null)
+        var artistClient = new BaseClient<ListResponse<Artist>>("artist/search", key);
+        // get artists
+        var values = new Dictionary<string, string?>
         {
-            Console.WriteLine($"Name: {artist.Name}");
-            Console.WriteLine($"Photo: {artist.Url}");
-            foreach (var painting in artist.Paintings)
-            {
-                Console.WriteLine($"painting Id: {painting.Id}");
-                Console.WriteLine($"painting name: {painting.Name}");
-                Console.WriteLine($"painting url: {painting.Url}");
-            }
-        }
-        Console.Write("Select Painting Id: ");
-        var paintingIdString = Console.ReadLine();
-        if (!string.IsNullOrEmpty(paintingIdString) && paintingIdString != "0")
+            { "name", null },
+        };
+        ListResponse<Artist> response = null;
+
+        await AnsiConsole.Status()
+        .StartAsync("Loading...", async ctx =>
         {
-            var paintingId = Int32.Parse(paintingIdString);
-            var painting = artist?.Paintings.Find(x => x.Id == paintingId);
+            response = await artistClient.Post(values);
+        });
+        if (response != null)
+        {
+            var artists = response.Items.OrderBy(x => x.Id);
+            string[] artistNames = artists.Select(x => x.Name).ToArray();
 
-            if (painting != null)
+            var selectedArtist = AnsiConsole.Prompt(
+                  new SelectionPrompt<string>()
+                      .Title("[green]Which Artist would you like to select [/]?")
+                      .MoreChoicesText("[grey](Move up and down to reveal more artist)[/]")
+                      .AddChoices(artistNames)
+                      );
+            // TODO: make this reusable incase there is an error
+            if (selectedArtist != null)
             {
-                await Helper.DownloadImageAsync($@"C:\Users\David Dobbins\Pictures\joy-of-painting\", painting.Id.ToString(), new Uri(painting.Url));
+                AnsiConsole.MarkupLine("You selected: [yellow]{0}[/]", selectedArtist);
+                var artistPaintings = artists.FirstOrDefault(x => x.Name == selectedArtist).Paintings.Select(x => x.Name);
 
-                var strokes = pixelator.PixelateImage($@"C:\Users\David Dobbins\Pictures\joy-of-painting\{painting.Id}.jpg");
+                var selectedPainting = AnsiConsole.Prompt(new SelectionPrompt<string>()
+                  .Title("[green]Which Painting would you like to select [/]?")
+                  .MoreChoicesText("[grey](Move up and down to reveal more paintings)[/]")
+                  .AddChoices(artistPaintings)
+                  );
+                AnsiConsole.MarkupLine("You selected: [yellow]{0}[/]", selectedPainting);
+                var painting = artists.FirstOrDefault(x => x.Name == selectedArtist)?.Paintings.Find(x => x.Name == selectedPainting);
 
-                var pixelation = new Pixelation()
+                if (painting != null)
                 {
-                    Brushstrokes = strokes,
-                    PaintingId = paintingId
-                };
+                    int pixelSize = AnsiConsole.Prompt(new TextPrompt<int>("[grey][[Optional]][/] [green]what pixel size[/]?")
+                                         .DefaultValue<int>(20));
 
-                // upload pixalation
-                var pixelationClient = new BaseClient<PixelationResponse>("pixelation", key);
-                var pixelationResponse = await pixelationClient.Post(pixelation);
-                if (pixelationResponse != null)
-                {
-                    var pixelationJson = JsonConvert.SerializeObject(pixelationResponse);
-                    Console.WriteLine(pixelationJson);
+                    AnsiConsole.MarkupLine("Pixelating image");
+                    await Helper.DownloadImageAsync($@"C:\Users\David Dobbins\Pictures\joy-of-painting\", painting.Id.ToString(), new Uri(painting.Url));
+
+                    List<Brushstroke> strokes = pixelator.PixelateImage($@"C:\Users\David Dobbins\Pictures\joy-of-painting\{painting.Id}.jpg", pixelSize);
+                    if(strokes.Count > 1000)
+                    {
+                        strokes = pixelator.PixelateImage($@"C:\Users\David Dobbins\Pictures\joy-of-painting\{painting.Id}.jpg", pixelSize - 1);
+                    }
+                    Pixelation pixelation = new()
+                    {
+                        Brushstrokes = strokes,
+                        PaintingId = painting.Id
+                    };
+                    
+                    PixelationResponse pixelationResponse = null;
+
+                    await AnsiConsole.Status().StartAsync("Loading...", async ctx =>
+                    {
+                        // upload pixalation
+                        var pixelationClient = new BaseClient<PixelationResponse>("pixelation", key);
+                        ctx.Status("Uploading pixelation");
+                        ctx.Spinner(Spinner.Known.Star);
+                        ctx.SpinnerStyle(Style.Parse("green"));
+                        pixelationResponse = await pixelationClient.Post(pixelation);
+                    });
+
+                    if (pixelationResponse != null)
+                    {
+                        if (pixelationResponse.ValidationErrors.Count > 0)
+                        {
+                            // log error
+                            AnsiConsole.Write($"[red] error: {pixelationResponse.ValidationErrors.ToList()}");
+                        }
+                        await Helper.DownloadImageAsync($@"C:\Users\David Dobbins\Pictures\joy-of-painting\submissions", pixelationResponse.Id.ToString(), new Uri(pixelationResponse.Url));
+
+
+                        var image = new CanvasImage($@"C:\Users\David Dobbins\Pictures\joy-of-painting\submissions\{pixelationResponse.Id}.jpg");
+                        image.MaxWidth(32);
+                        AnsiConsole.Write(image);
+
+                        AnsiConsole.WriteLine(pixelationResponse.Message);
+                    }
+                    if (!AnsiConsole.Confirm("Pixelate another image?"))
+                    {
+                        AnsiConsole.MarkupLine("Ok... :(");
+                        Environment.Exit(0);
+                    }
+                    AnsiConsole.Clear();
+
                 }
-                Console.ReadLine();
             }
         }
     }
-}
-else
-{
-    // get categories
-}
+    else
+    {
+        // get all categories
 
-// get all categories
+        // output the category options
 
-// output the category options
+        // ask user for input of which category
 
-// ask user for input of which category
+        // get paintings by category selected
+    }
+} while (Console.ReadKey(true).Key != ConsoleKey.Escape);
 
-// get paintings by category selected
 
-// 
-
-// Specifying a file path

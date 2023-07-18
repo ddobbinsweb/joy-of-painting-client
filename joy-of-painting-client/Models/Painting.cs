@@ -3,4 +3,6 @@
 public class Painting : BaseModel
 {
     public PaintingCategory PaintingCategory { get; set; } = new();
+    public int Width { get; set; }
+    public int Height { get; set; }
 }

@@ -50,9 +50,9 @@ if (getPaitingOption == "0")
             Console.WriteLine($"Photo: {artist.Url}");
             foreach (var painting in artist.Paintings)
             {
-                Console.WriteLine($"paiting Id: {painting.Id}");
-                Console.WriteLine($"paiting name: {painting.Name}");
-                Console.WriteLine($"paiting url: {painting.Url}");
+                Console.WriteLine($"painting Id: {painting.Id}");
+                Console.WriteLine($"painting name: {painting.Name}");
+                Console.WriteLine($"painting url: {painting.Url}");
             }
         }
         Console.Write("Select Painting Id: ");

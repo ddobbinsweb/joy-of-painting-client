@@ -38,7 +38,7 @@ namespace joy_of_painting_client
                 throw new Exception(ex.Message);
             }
         }
-        public async Task<List<T>> Post(object item)
+        public async Task<T> Post(object item)
         {
             try
             {
@@ -52,7 +52,7 @@ namespace joy_of_painting_client
                     throw new Exception($"Failed to create the resource returned {response.StatusCode}");
                 }
                 var result = await response.Content.ReadAsStringAsync();
-                var returnModel = JsonConvert.DeserializeObject<List<T>>(result);
+                var returnModel = JsonConvert.DeserializeObject<T>(result);
 
                 return returnModel;
             }

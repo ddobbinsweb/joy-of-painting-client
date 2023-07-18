@@ -5,6 +5,6 @@
         Task<List<T>> GetAllAsync();
         Task<T> GetAsync(int id);
         Task Post(T item);
-        Task<List<T>> Post(object item);
+        Task<T> Post(object item);
     }
 }

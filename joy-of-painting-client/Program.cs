@@ -2,7 +2,7 @@
 using joy_of_painting_client.Models;
 using joy_of_painting_client.Responses;
 using Spectre.Console;
-
+using System.Drawing;
 
 do
 {
@@ -70,17 +70,14 @@ do
                     AnsiConsole.MarkupLine("Pixelating image");
                     await Helper.DownloadImageAsync($@"C:\Users\David Dobbins\Pictures\joy-of-painting\", painting.Id.ToString(), new Uri(painting.Url));
 
-                    List<Brushstroke> strokes = pixelator.PixelateImage($@"C:\Users\David Dobbins\Pictures\joy-of-painting\{painting.Id}.jpg", pixelSize);
-                    if(strokes.Count > 1000)
-                    {
-                        strokes = pixelator.PixelateImage($@"C:\Users\David Dobbins\Pictures\joy-of-painting\{painting.Id}.jpg", pixelSize - 1);
-                    }
+                    List<Brushstroke> strokes = await pixelator.PixelateImageAsync(painting, pixelSize);
+                  
                     Pixelation pixelation = new()
                     {
                         Brushstrokes = strokes,
                         PaintingId = painting.Id
                     };
-                    
+
                     PixelationResponse pixelationResponse = null;
 
                     await AnsiConsole.Status().StartAsync("Loading...", async ctx =>
@@ -104,7 +101,7 @@ do
 
 
                         var image = new CanvasImage($@"C:\Users\David Dobbins\Pictures\joy-of-painting\submissions\{pixelationResponse.Id}.jpg");
-                        image.MaxWidth(32);
+                        image.MaxWidth(pixelSize);
                         AnsiConsole.Write(image);
 
                         AnsiConsole.WriteLine(pixelationResponse.Message);

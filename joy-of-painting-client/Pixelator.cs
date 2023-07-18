@@ -4,16 +4,16 @@ namespace joy_of_painting_client;
 
 public class Pixelator
 {
-    public List<Brushstroke> PixelateImage(string imagePath)
+    public List<Brushstroke> PixelateImage(string imagePath, int size = 20)
     {
-        List<Brushstroke> brushstrokes = new List<Brushstroke>();
+        List<Brushstroke> brushstrokes = new();
 
         Bitmap image = new Bitmap(imagePath);
 
         int width = image.Width;
         int height = image.Height;
 
-        int pixelSize = (int)Math.Ceiling((double)width / 16); // Adjust the pixel size as needed
+        int pixelSize = (int)Math.Ceiling((double)width / size); // Adjust the pixel size as needed
 
         int order = 0;
 
@@ -39,13 +39,10 @@ public class Pixelator
                 brushstroke.Height = toY - y;
 
                 brushstrokes.Add(brushstroke);
-               
+
                 order++;
-                //if (brushstrokes.Count >= 500)
-                //    return brushstrokes;
             }
         }
-
         return brushstrokes;
     }
 

@@ -25,7 +25,6 @@ if (getPaitingOption == "0")
     var values = new Dictionary<string, string?>
     {
       { "name", null },
-
     };
 
 
@@ -39,11 +38,11 @@ if (getPaitingOption == "0")
     }
     Console.Write("select artist id:");
     var artistIdString = Console.ReadLine();
-    if (artistIdString != "0")
+    if (!string.IsNullOrEmpty(artistIdString) && artistIdString != "0")
     {
         var artistId = Int32.Parse(artistIdString);
         // get artist paintings
-        var artist = response.Items.FirstOrDefault<Artist>(x => x.Id == artistId);
+        var artist = response.Items.Find(x => x.Id == artistId);
         if (artist != null)
         {
             Console.WriteLine($"Name: {artist.Name}");
@@ -57,37 +56,35 @@ if (getPaitingOption == "0")
         }
         Console.Write("Select Painting Id: ");
         var paintingIdString = Console.ReadLine();
-        if( paintingIdString != "0")
+        if (!string.IsNullOrEmpty(paintingIdString) && paintingIdString != "0")
         {
             var paintingId = Int32.Parse(paintingIdString);
-            var painting = artist.Paintings.Where(x=>x.Id == paintingId).FirstOrDefault();
+            var painting = artist?.Paintings.Find(x => x.Id == paintingId);
 
-            await Helper.DownloadImageAsync($@"C:\Users\David Dobbins\Pictures\joy-of-painting\", painting.Id.ToString(), new Uri(painting.Url));
-        
-
-            var strokes = pixelator.PixelateImage($@"C:\Users\David Dobbins\Pictures\joy-of-painting\{painting.Id}.jpg");
-            var json = JsonConvert.SerializeObject(strokes);
-
-            var pixelation = new Pixelation()
+            if (painting != null)
             {
-                Brushstrokes = strokes,
-                 PaintingId = paintingId
-            };
+                await Helper.DownloadImageAsync($@"C:\Users\David Dobbins\Pictures\joy-of-painting\", painting.Id.ToString(), new Uri(painting.Url));
 
-            // upload pixalation
-            var pixelationClient = new BaseClient<PixelationResponse>("pixelation",key);
-            var pixelationResponse = await pixelationClient.Post(pixelation);
-            if(pixelationResponse != null)
-            {
-                var pixelationJson = JsonConvert.SerializeObject(pixelationResponse);
-                Console.WriteLine(pixelationJson);
+                var strokes = pixelator.PixelateImage($@"C:\Users\David Dobbins\Pictures\joy-of-painting\{painting.Id}.jpg");
+
+                var pixelation = new Pixelation()
+                {
+                    Brushstrokes = strokes,
+                    PaintingId = paintingId
+                };
+
+                // upload pixalation
+                var pixelationClient = new BaseClient<PixelationResponse>("pixelation", key);
+                var pixelationResponse = await pixelationClient.Post(pixelation);
+                if (pixelationResponse != null)
+                {
+                    var pixelationJson = JsonConvert.SerializeObject(pixelationResponse);
+                    Console.WriteLine(pixelationJson);
+                }
+                Console.ReadLine();
             }
-            Console.ReadLine();
-
         }
-
     }
-
 }
 else
 {

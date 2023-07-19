@@ -1,4 +1,7 @@
-﻿namespace joy_of_painting_client
+﻿using static System.Net.Mime.MediaTypeNames;
+using System.Configuration;
+
+namespace joy_of_painting_client
 {
     public static class Helper
     {
@@ -18,6 +21,14 @@
             // Download the image and write to the file
             var imageBytes = await httpClient.GetByteArrayAsync(uri);
             await File.WriteAllBytesAsync(path, imageBytes);
+        }
+
+        public static void AddConfigValue(string key, string value)
+        {
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            config.AppSettings.Settings.Add(key, value);
+            //  config.AppSettings.Settings["Yourkey"].Value = "YourValue";
+            config.Save(ConfigurationSaveMode.Modified);
         }
     }
 }

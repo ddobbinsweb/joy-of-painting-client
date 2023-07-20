@@ -5,7 +5,7 @@ using System.Text;
 
 namespace joy_of_painting_client;
 
-public class BaseClient<T> : HttpClient, IBaseClient<T> where T : class
+public class BaseClient: HttpClient, IBaseClient
 {
     private readonly string basePath;
     private const string MEDIA_TYPE = "application/json";
@@ -18,7 +18,7 @@ public class BaseClient<T> : HttpClient, IBaseClient<T> where T : class
         this.basePath = BaseAddress + basePath;
         _key = key;
     }
-    public async Task Post(T item)
+    public async Task Post<T>(T item,string path)
     {
         try
         {
@@ -26,7 +26,7 @@ public class BaseClient<T> : HttpClient, IBaseClient<T> where T : class
             var serializedJson = GetSerializedObject(item);
             var bodyContent = GetBodyContent(serializedJson);
 
-            var response = await PostAsync(basePath, bodyContent);
+            var response = await PostAsync(basePath + path, bodyContent);
             if (!response.IsSuccessStatusCode)
             {
                 throw new Exception($"Failed to create the resource returned {response.StatusCode}");
@@ -38,15 +38,15 @@ public class BaseClient<T> : HttpClient, IBaseClient<T> where T : class
             throw new Exception(ex.Message);
         }
     }
-    public async Task<T> Post(object item)
+    public async Task<T> Post<T>(object item,string? path)
     {
         try
         {
             SetupHeaders();
             var serializedJson = GetSerializedObject(item);
             var bodyContent = GetBodyContent(serializedJson);
-
-            var response = await PostAsync(basePath, bodyContent);
+            var api = path != null ? basePath + path : basePath;
+            var response = await PostAsync(api, bodyContent);
             if (!response.IsSuccessStatusCode)
             {
                 throw new Exception($"Failed to create the resource returned {response.StatusCode}");
@@ -63,13 +63,13 @@ public class BaseClient<T> : HttpClient, IBaseClient<T> where T : class
         }
     }
 
-    public async Task<T> GetAllAsync()
+    public async Task<T> GetAllAsync<T>(string path)
     {
         try
         {
             SetupHeaders();
 
-            var response = await GetAsync(basePath);
+            var response = await GetAsync(basePath + path );
 
             if (response.IsSuccessStatusCode)
             {
@@ -90,13 +90,13 @@ public class BaseClient<T> : HttpClient, IBaseClient<T> where T : class
         }
     }
 
-    public async Task<T> GetAsync(int id)
+    public async Task<T> GetAsync<T>(int id,string? path)
     {
         try
         {
             SetupHeaders();
 
-            var response = await GetAsync(basePath + $"/{id}");
+            var response = await GetAsync(basePath + path + $"/{id}");
 
             if (response.IsSuccessStatusCode)
             {

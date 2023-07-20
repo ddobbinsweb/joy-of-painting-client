@@ -13,6 +13,7 @@ public static class GameSettings
         {
             //TODO: add way to login to get guid
             SetUserInfo();
+            GameLayout.Reset();
         }
     }
 
@@ -69,12 +70,13 @@ public static class GameSettings
                 AnsiConsole.Clear();
                 return;
             }
-            AnsiConsole.MarkupLine("Great!");
-            string userKey = AnsiConsole.Prompt(new TextPrompt<string>("[green] What's your api key[/]?"));
-
-            Helper.AddConfigValue("userKey", userKey);
+        
 
         }
+        AnsiConsole.MarkupLine("Great!");
+        string userKey = AnsiConsole.Prompt(new TextPrompt<string>("[green] What's your api key[/]?"));
+
+        Helper.AddConfigValue("userKey", userKey);
 
         AnsiConsole.Clear();
     }

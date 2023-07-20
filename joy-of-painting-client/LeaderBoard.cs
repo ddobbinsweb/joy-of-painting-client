@@ -17,10 +17,10 @@ public static class LeaderBoard
             .StartAsync(async ctx =>
             {
                 string? userKey = GameSettings.GetUserKey();
-                var leaderBoardClient = new BaseClient<LeaderBoardResponse>("leaderboard/general",userKey);
-                var response =  await leaderBoardClient.GetAllAsync();
+                var leaderBoardClient = new BaseClient("leaderboard", userKey);
+                var response = await leaderBoardClient.GetAllAsync<LeaderBoardResponse>("/general");
 
-                if(response != null)
+                if (response != null)
                 {
                     table.AddColumn("Place");
                     table.AddColumn("Name");
@@ -30,14 +30,14 @@ public static class LeaderBoard
                     foreach (var item in response.Results)
                     {
 
-                        table.AddRow(item.Order.ToString(), item.PainterName, item.Score.ToString(),$"[link green] https://jop.revunit.com/profile/{item.PainterId} [/]");
+                        table.AddRow(item.Order.ToString(), item.PainterName, item.Score.ToString(), $"[link green] https://jop.revunit.com/profile/{item.PainterId} [/]");
                         ctx.Refresh();
                     }
                 }
             });
 
-        
-       if (!AnsiConsole.Confirm("Go Back"))
+
+        if (!AnsiConsole.Confirm("Go Back"))
         {
             GameLayout.Reset();
             await ShowAsync();

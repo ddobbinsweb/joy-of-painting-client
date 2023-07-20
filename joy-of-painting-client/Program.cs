@@ -30,20 +30,17 @@ do
             break;
         case "View LeaderBoard":
             await LeaderBoard.ShowAsync();
-            GameLayout.Reset();
             break;
         case "Settings":
             GameSettings.Menu();
-            GameLayout.Reset();
             break;
         case "Exit":
             AnsiConsole.WriteLine("GOOD BYE");
             break;
         default:
-            GameLayout.Reset();
             break;
     }
-
+    GameLayout.Reset();
 
 } while (gameMenu != "Exit");
 

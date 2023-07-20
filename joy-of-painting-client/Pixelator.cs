@@ -10,7 +10,6 @@ namespace joy_of_painting_client;
 
 public class Pixelator
 {
-    private const string FILE_PATH = $@"C:\Users\David Dobbins\Pictures\joy-of-painting\";
     public async Task PixelateImageAsync()
     {
 
@@ -23,11 +22,11 @@ public class Pixelator
                 );
 
         string? userKey = GameSettings.GetUserKey();
-
+        Painting painting = null;
 
         if (findPaintingOption == "Artist")
         {
-            var artistClient = new BaseClient<ListResponse<Artist>>("artist/search", userKey);
+            var artistClient = new BaseClient("artist", userKey);
             // get artists
             var values = new Dictionary<string, string?>
             {
@@ -38,7 +37,7 @@ public class Pixelator
             await AnsiConsole.Status()
             .StartAsync("Loading...", async ctx =>
             {
-                response = await artistClient.Post(values);
+                response = await artistClient.Post<ListResponse<Artist>>(values, "/search");
             });
             if (response != null)
             {
@@ -65,86 +64,115 @@ public class Pixelator
                       );
                     AnsiConsole.MarkupLine("You selected: [yellow]{0}[/]", selectedPainting);
 
-                    var painting = artists.FirstOrDefault(x => x.Name == selectedArtist)?.Paintings.Find(x => x.Name == selectedPainting);
-
-                    if (painting != null)
-                    {
-                        int pixelSize = AnsiConsole.Prompt(new TextPrompt<int>("[grey][[Optional]][/] [green]what pixel size[/]?")
-                                             .DefaultValue<int>(20));
-
-                        AnsiConsole.MarkupLine("Pixelating image");
-                        string BaseImagePath = $@"C:\Users\David Dobbins\Pictures\joy-of-painting\"; // TODO:get from configuration
-
-                        await Helper.DownloadImageAsync(BaseImagePath, painting.Id.ToString(), new Uri(painting.Url));
-
-                        string originalImagePath = $@"{BaseImagePath}{painting.Id}.jpg";
-                        CanvasImage originalImage = new(originalImagePath);
-                        originalImage.MaxWidth(pixelSize);
-
-
-                        List<Brushstroke> strokes = await PixelateImageAsync(painting, pixelSize);
-
-                        Pixelation pixelation = new()
-                        {
-                            Brushstrokes = strokes,
-                            PaintingId = painting.Id
-                        };
-
-                        PixelationResponse pixelationResponse = null;
-
-                        await AnsiConsole.Status().StartAsync("Loading...", async ctx =>
-                        {
-                            // upload pixalation
-                            var pixelationClient = new BaseClient<PixelationResponse>("pixelation", userKey);
-                            ctx.Status("Uploading pixelation");
-                            ctx.Spinner(Spinner.Known.Star);
-                            ctx.SpinnerStyle(Style.Parse("green"));
-                            pixelationResponse = await pixelationClient.Post(pixelation);
-                        });
-
-                        if (pixelationResponse != null)
-                        {
-                            if (pixelationResponse.ValidationErrors.Count > 0)
-                            {
-                                // log error
-                                AnsiConsole.Write($"[red] error: {pixelationResponse.ValidationErrors.ToList()}");
-                            }
-                            await Helper.DownloadImageAsync($@"C:\Users\David Dobbins\Pictures\joy-of-painting\submissions", pixelationResponse.Id.ToString(), new Uri(pixelationResponse.Url));
-
-                            string imagePath = $@"C:\Users\David Dobbins\Pictures\joy-of-painting\submissions\{pixelationResponse.Id}.jpg";
-                            CanvasImage image = new(imagePath);
-                            image.MaxWidth(pixelSize);
-
-                            AnsiConsole.WriteLine(pixelationResponse.Message);
-                        }
-                        if (!AnsiConsole.Confirm("Pixelate another image?"))
-                        {
-                            AnsiConsole.MarkupLine("Ok... :(");
-                            Environment.Exit(0);
-                        }
-                        AnsiConsole.Clear();
-
-                    }
+                    painting = artists.FirstOrDefault(x => x.Name == selectedArtist)?.Paintings.Find(x => x.Name == selectedPainting);
                 }
             }
         }
         else
         {
             // get all categories
+            var paintingClient = new BaseClient("painting", userKey);
 
-            // output the category options
+            var categoryResponse = await paintingClient.GetAllAsync<ListResponse<PaintingCategory>>("/categories");
+            if (categoryResponse != null)
+            {
+                var categories = categoryResponse.Items.Cast<PaintingCategory>().ToList();
+                var categoryNames = categories.Select(x => x.Name);
+                // output the category options
+                var selectedCategory = AnsiConsole.Prompt(
+                      new SelectionPrompt<string>()
+                          .Title("[green]Which Category would you like to select [/]?")
+                          .MoreChoicesText("[grey](Move up and down to reveal more artist)[/]")
+                          .AddChoices(categoryNames)
+                          );
 
-            // ask user for input of which category
+                if (selectedCategory != null)
+                {
+                    AnsiConsole.MarkupLine("You selected: [yellow]{0}[/]", selectedCategory);
+                    // get paintings by category selected
+                    int? selectedCategoryId = categories.FirstOrDefault(x => x.Name == selectedCategory)?.Id;
+                    if (selectedCategoryId != null)
+                    {
+                        var values = new Dictionary<string, string?>
+                        {
+                             { "artistId", "0" },
+                             {"paintingCategoryId" , selectedCategoryId.ToString() }
+                        };
+                        ListResponse<Painting> paintingResponse = null;
 
-            // get paintings by category selected
+                        await AnsiConsole.Status()
+                        .StartAsync("Loading...", async ctx =>
+                        {
+                            paintingResponse = await paintingClient.Post<ListResponse<Painting>>(values, "/search");
+                        });
+
+                        if (paintingResponse != null)
+                        {
+                            var paintingNames = paintingResponse.Items.Select(x => x.Name);
+
+                            var selectedPainting = AnsiConsole.Prompt(
+                                 new SelectionPrompt<string>()
+                                .Title("[green]Which Category would you like to select [/]?")
+                                .MoreChoicesText("[grey](Move up and down to reveal more artist)[/]")
+                                 .AddChoices(paintingNames));
+
+                            if (selectedPainting != null)
+                            {
+                                AnsiConsole.MarkupLine("You selected: [yellow]{0}[/]", selectedPainting);
+                                int? selectedPaintingId = paintingResponse.Items.FirstOrDefault(x => x.Name == selectedPainting)?.Id;
+                                if (selectedPaintingId != null)
+                                {
+                                    SingleResponse<Painting> selectedPaintingResponse = await paintingClient.GetAsync<SingleResponse<Painting>>(selectedPaintingId.Value, null);
+                                    painting = selectedPaintingResponse.Item;
+                                }
+
+                            }
+                        }
+                    }
+
+                }
+            }
+        }
+
+        if (painting != null)
+        {
+
+
+            bool approved = false;
+            while (!approved)
+            {
+                int pixelSize = AnsiConsole.Prompt(new TextPrompt<int>("[grey][[Optional]][/] [green]what pixel size[/]?")
+                          .DefaultValue<int>(20));
+                List<Brushstroke> strokes = new();
+                await AnsiConsole.Status().StartAsync("Pixelating image...", async ctx =>
+                {
+
+                    strokes = await PixelateImageAsync(painting, pixelSize);
+                });
+                if (AnsiConsole.Confirm("Does this look good?"))
+                {
+                    approved = true;
+                    await UploadPixalation(userKey, painting, pixelSize, strokes);
+                }
+            }
+
+
+            if (!AnsiConsole.Confirm("Pixelate another image?"))
+            {
+                AnsiConsole.Clear();
+                return;
+            }
+            AnsiConsole.Clear();
         }
     }
+
     public async Task<List<Brushstroke>> PixelateImageAsync(Painting painting, int size = 20, int failureCount = 0)
     {
         List<Brushstroke> brushstrokes = new();
-        await Helper.DownloadImageAsync(FILE_PATH, painting.Id.ToString(), new Uri(painting.Url));
-        string imagePath = $"{FILE_PATH}/{painting.Id}.jpg";
-        Bitmap image = new Bitmap(imagePath);
+
+        MemoryStream imageDownload = await Helper.DownloadImageAsync(new Uri(painting.Url));
+
+        Bitmap image = new Bitmap(imageDownload);
 
         int width = image.Width;
         int height = image.Height;
@@ -181,44 +209,41 @@ public class Pixelator
         }
         if (brushstrokes.Count > 1000)
         {
-           await PixelateImageAsync(painting, size, failureCount + 1);
+            await PixelateImageAsync(painting, size - 2, failureCount + 1);
         }
 
-
         RotateBrushstrokes(brushstrokes, width, height);
-        string previewImagePath = $@"{FILE_PATH}\preview\{DateTime.Now.ToFileTimeUtc}";
 
-        CreateImageStream(width, height, brushstrokes, previewImagePath);
-        var previewImage = new CanvasImage(previewImagePath);
+        MemoryStream previewImageStream = CreateImageStream(width, height, brushstrokes);
+        var previewImage = new CanvasImage(previewImageStream);
         previewImage.MaxWidth = pixelSize;
 
         AnsiConsole.Write(previewImage);
 
-        if (!AnsiConsole.Confirm("Does this look good?"))
-        {
-           await  PixelateImageAsync(painting, size);
-        }
         return brushstrokes;
     }
 
-    public  void CreateImageStream(int width, int height, List<Brushstroke> brushstrokes, string savePath)
+    public MemoryStream CreateImageStream(int width, int height, List<Brushstroke> brushstrokes)
     {
-        using (Bitmap bitmap = new Bitmap(width, height))
-        {
-            using (Graphics g = Graphics.FromImage(bitmap))
-            {
-                ColorConverter colorConverter = new ColorConverter();
-                g.Clear(Color.White);
+        Bitmap bitmap = new Bitmap(width, height);
 
-                foreach (Brushstroke stroke in brushstrokes.OrderBy(x => x.Order).ToList())
-                {
-                    Pen pen = new Pen((Color)colorConverter.ConvertFromString(stroke.Color));
-                    pen.Width = stroke.Width;
-                    g.DrawLine(pen, stroke.FromX, stroke.FromY, stroke.ToX, stroke.ToY);
-                }
+        using (Graphics g = Graphics.FromImage(bitmap))
+        {
+            ColorConverter colorConverter = new ColorConverter();
+            g.Clear(Color.White);
+
+            foreach (Brushstroke stroke in brushstrokes.OrderBy(x => x.Order).ToList())
+            {
+                Pen pen = new Pen((Color)colorConverter.ConvertFromString(stroke.Color));
+                pen.Width = stroke.Width;
+                g.DrawLine(pen, stroke.FromX, stroke.FromY, stroke.ToX, stroke.ToY);
             }
-            bitmap.Save(savePath, ImageFormat.Jpeg);
         }
+        MemoryStream memoryStream = new MemoryStream();
+        bitmap.Save(memoryStream, ImageFormat.Png);
+        memoryStream.Position = 0;
+        return memoryStream;
+
     }
     private void RotateBrushstrokes(List<Brushstroke> brushstrokes, int width, int height)
     {
@@ -271,5 +296,40 @@ public class Pixelator
         return Color.FromArgb(avgR, avgG, avgB);
     }
 
-    
+    private static async Task UploadPixalation(string? userKey, Painting painting, int pixelSize, List<Brushstroke> strokes)
+    {
+        Pixelation pixelation = new()
+        {
+            Brushstrokes = strokes,
+            PaintingId = painting.Id
+        };
+
+        PixelationResponse pixelationResponse = null;
+
+        await AnsiConsole.Status()
+            .Spinner(Spinner.Known.Star)
+            .SpinnerStyle(Style.Parse("green"))
+            .StartAsync("Uploading pixelation...", async ctx =>
+            {
+                // upload pixalation
+                var pixelationClient = new BaseClient("pixelation", userKey);
+                pixelationResponse = await pixelationClient.Post<PixelationResponse>(pixelation, null);
+            });
+
+        if (pixelationResponse != null)
+        {
+            if (pixelationResponse.ValidationErrors.Count > 0)
+            {
+                // log error
+                AnsiConsole.Write($"[red] error: {pixelationResponse.ValidationErrors.ToList()}");
+            }
+            MemoryStream pixalateImage = await Helper.DownloadImageAsync(new Uri(pixelationResponse.Url));
+
+            CanvasImage image = new(pixalateImage);
+            image.MaxWidth(pixelSize);
+
+            AnsiConsole.Write(image);
+            AnsiConsole.WriteLine(pixelationResponse.Message);
+        }
+    }
 }

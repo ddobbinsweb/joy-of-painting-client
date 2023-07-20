@@ -63,7 +63,7 @@ public class BaseClient<T> : HttpClient, IBaseClient<T> where T : class
         }
     }
 
-    public async Task<List<T>> GetAllAsync()
+    public async Task<T> GetAllAsync()
     {
         try
         {
@@ -74,7 +74,7 @@ public class BaseClient<T> : HttpClient, IBaseClient<T> where T : class
             if (response.IsSuccessStatusCode)
             {
                 var result = await response.Content.ReadAsStringAsync();
-                var returnModel = JsonConvert.DeserializeObject<List<T>>(result);
+                var returnModel = JsonConvert.DeserializeObject<T>(result);
 
                 return returnModel;
             }

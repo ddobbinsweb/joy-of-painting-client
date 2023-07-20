@@ -298,7 +298,7 @@ public class Pixelator
 
     private static async Task UploadPixalation(string? userKey, Painting painting, int pixelSize, List<Brushstroke> strokes)
     {
-        Pixelation pixelation = new()
+        PixelationSubmission pixelation = new()
         {
             Brushstrokes = strokes,
             PaintingId = painting.Id

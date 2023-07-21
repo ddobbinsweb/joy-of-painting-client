@@ -8,9 +8,9 @@ using Color = System.Drawing.Color;
 
 namespace joy_of_painting_client;
 
-public class Pixelator
+public static class Pixelator
 {
-    public async Task PixelateImageAsync()
+    public static async Task PixelateImageAsync()
     {
 
         string findPaintingOption = AnsiConsole.Prompt(
@@ -141,19 +141,7 @@ public class Pixelator
             bool approved = false;
             while (!approved)
             {
-                int pixelSize = AnsiConsole.Prompt(new TextPrompt<int>("[grey][[Optional]][/] [green]what pixel size[/]?")
-                          .DefaultValue<int>(20));
-                List<Brushstroke> strokes = new();
-                await AnsiConsole.Status().StartAsync("Pixelating image...", async ctx =>
-                {
-
-                    strokes = await PixelateImageAsync(painting, pixelSize);
-                });
-                if (AnsiConsole.Confirm("Does this look good?"))
-                {
-                    approved = true;
-                    await UploadPixalation(userKey, painting, pixelSize, strokes);
-                }
+                approved = await SubmitPixelation(userKey, painting, approved);
             }
 
 
@@ -162,11 +150,15 @@ public class Pixelator
                 AnsiConsole.Clear();
                 return;
             }
+            else
+            {
+               await PixelateImageAsync();
+            }
             AnsiConsole.Clear();
         }
     }
 
-    public async Task<List<Brushstroke>> PixelateImageAsync(Painting painting, int size = 20, int failureCount = 0)
+    public static async Task<List<Brushstroke>> PixelateImageAsync(Painting painting, int size = 20, int failureCount = 0)
     {
         List<Brushstroke> brushstrokes = new();
 
@@ -209,23 +201,27 @@ public class Pixelator
         }
         if (brushstrokes.Count > 1000)
         {
-            await PixelateImageAsync(painting, size - 2, failureCount + 1);
+                await PixelateImageAsync(painting, size - 2, failureCount + 1);
+        }
+        else
+        {
+
+            RotateBrushstrokes(brushstrokes, width, height);
+
+            MemoryStream previewImageStream = CreateImageStream(width, height, brushstrokes);
+            var previewImage = new CanvasImage(previewImageStream);
+            previewImage.MaxWidth = pixelSize;
+
+            AnsiConsole.Write(previewImage);
         }
 
-        RotateBrushstrokes(brushstrokes, width, height);
-
-        MemoryStream previewImageStream = CreateImageStream(width, height, brushstrokes);
-        var previewImage = new CanvasImage(previewImageStream);
-        previewImage.MaxWidth = pixelSize;
-
-        AnsiConsole.Write(previewImage);
 
         return brushstrokes;
     }
 
-    public MemoryStream CreateImageStream(int width, int height, List<Brushstroke> brushstrokes)
+    public static MemoryStream CreateImageStream(int width, int height, List<Brushstroke> brushstrokes)
     {
-        Bitmap bitmap = new Bitmap(width, height);
+        Bitmap bitmap = new(width, height);
 
         using (Graphics g = Graphics.FromImage(bitmap))
         {
@@ -245,7 +241,7 @@ public class Pixelator
         return memoryStream;
 
     }
-    private void RotateBrushstrokes(List<Brushstroke> brushstrokes, int width, int height)
+    private static void RotateBrushstrokes(List<Brushstroke> brushstrokes, int width, int height)
     {
         foreach (var brushstroke in brushstrokes)
         {
@@ -272,7 +268,7 @@ public class Pixelator
         }
     }
 
-    private Color CalculateAverageColor(Bitmap image, int fromX, int fromY, int toX, int toY)
+    private static Color CalculateAverageColor(Bitmap image, int fromX, int fromY, int toX, int toY)
     {
         int rTotal = 0, gTotal = 0, bTotal = 0;
         int pixelCount = 0;
@@ -294,6 +290,36 @@ public class Pixelator
         int avgB = bTotal / pixelCount;
 
         return Color.FromArgb(avgR, avgG, avgB);
+    }
+
+    private static async Task<bool> SubmitPixelation(string? userKey, Painting painting, bool approved)
+    {
+        int pixelSize = AnsiConsole.Prompt(new TextPrompt<int>("[grey][[Optional]][/] [green]what pixel size[/]?")
+
+            .ValidationErrorMessage("[red] That's not a valid value[/]")
+            .Validate(size =>
+            {
+                return size switch
+                {
+                    < 0 => ValidationResult.Error("[red] Pixel Size must be greater than 0 [/]"),
+                    > 100 => ValidationResult.Error("[red] Pixel Size can not be greater than 100 [/]"),
+                    _ => ValidationResult.Success(),
+                };
+            }));
+        List<Brushstroke> strokes = new();
+        await AnsiConsole.Status().StartAsync("Pixelating image...", async ctx =>
+        {
+
+            strokes = await PixelateImageAsync(painting, pixelSize);
+        });
+        AnsiConsole.WriteLine($"Pixel Count:{strokes.Count}");
+        if (AnsiConsole.Confirm("Does this look good?"))
+        {
+            approved = true;
+            await UploadPixalation(userKey, painting, pixelSize, strokes);
+        }
+
+        return approved;
     }
 
     private static async Task UploadPixalation(string? userKey, Painting painting, int pixelSize, List<Brushstroke> strokes)
@@ -321,15 +347,25 @@ public class Pixelator
             if (pixelationResponse.ValidationErrors.Count > 0)
             {
                 // log error
-                AnsiConsole.Write($"[red] error: {pixelationResponse.ValidationErrors.ToList()}");
+                AnsiConsole.Write($"[red] error[/] : {String.Join("", pixelationResponse.ValidationErrors)}");
+                if (AnsiConsole.Confirm("[green] Try Again?[/]"))
+                {
+                   if( await SubmitPixelation(userKey, painting, false))
+                    {
+                        // do something
+                    }
+                }
             }
-            MemoryStream pixalateImage = await Helper.DownloadImageAsync(new Uri(pixelationResponse.Url));
+            else
+            {
+                MemoryStream pixalateImage = await Helper.DownloadImageAsync(new Uri(pixelationResponse.Url));
 
-            CanvasImage image = new(pixalateImage);
-            image.MaxWidth(pixelSize);
+                CanvasImage image = new(pixalateImage);
+                image.MaxWidth(pixelSize);
 
-            AnsiConsole.Write(image);
-            AnsiConsole.WriteLine(pixelationResponse.Message);
+                AnsiConsole.Write(image);
+                AnsiConsole.WriteLine(pixelationResponse.Message);
+            }
         }
     }
 }

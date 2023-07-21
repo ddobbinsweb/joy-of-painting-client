@@ -3,20 +3,21 @@ using joy_of_painting_client.Game;
 using Spectre.Console;
 
 
-GameLayout.Setup();
+await GameLayout.Setup();
 // get config settings
-GameSettings.Check();
+await GameSettings.CheckAsync();
 string gameMenu;
 do
 {
     gameMenu = AnsiConsole.Prompt(
        new SelectionPrompt<string>()
-           .Title("[bold white]--Game Menu-- [/]")
+           .Title("[bold white]Game Menu[/] [green] What would you like to do? [/]")
            .PageSize(10)
            .MoreChoicesText("[grey](Move up and down to reveal more options)[/]")
            .AddChoices(
                "Pixelate Image",
                "View LeaderBoard",
+               "Create Original",
                "Settings",
                "Exit")
            );
@@ -25,11 +26,13 @@ do
     {
         case "Pixelate Image":
             //Make code go to pixalor
-            Pixelator pixelator = new();
-            await pixelator.PixelateImageAsync();
+            await Pixelator.PixelateImageAsync();
             break;
         case "View LeaderBoard":
             await LeaderBoard.ShowAsync();
+            break;
+        case "Create Original":
+            Original.Create();
             break;
         case "Settings":
             GameSettings.Menu();
@@ -40,7 +43,7 @@ do
         default:
             break;
     }
-    GameLayout.Reset();
+ await GameLayout.Reset();
 
 } while (gameMenu != "Exit");
 

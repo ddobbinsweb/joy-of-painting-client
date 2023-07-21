@@ -30,7 +30,7 @@ public static class LeaderBoard
                     foreach (var item in response.Results)
                     {
 
-                        table.AddRow(item.Order.ToString(), item.PainterName, item.Score.ToString(), $"[link green] https://jop.revunit.com/profile/{item.PainterId} [/]");
+                        table.AddRow(item.Order.ToString(), item.PainterName, item.Score.ToString(), $"[green] https://jop.revunit.com/profile/{item.PainterId} [/]");
                         ctx.Refresh();
                     }
                 }
@@ -39,7 +39,7 @@ public static class LeaderBoard
 
         if (!AnsiConsole.Confirm("Go Back"))
         {
-            GameLayout.Reset();
+            await GameLayout.Reset();
             await ShowAsync();
         }
     }

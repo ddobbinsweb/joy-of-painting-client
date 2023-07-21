@@ -1,30 +1,12 @@
 ﻿using System.Configuration;
+using System.Diagnostics;
 using System.Drawing;
+using System.Runtime.InteropServices;
 
 namespace joy_of_painting_client;
 
 public static class Helper
 {
-
-    public static async Task<Image> DownloadImageAsync(string directoryPath, string fileName, Uri uri)
-    {
-        Byte[] imageBytes;
-        // Get the file extension
-        var uriWithoutQuery = uri.GetLeftPart(UriPartial.Path);
-        var fileExtension = Path.GetExtension(uriWithoutQuery);
-
-        // Create file path and ensure directory exists
-        var path = Path.Combine(directoryPath, $"{fileName}{fileExtension}");
-        Directory.CreateDirectory(directoryPath);
-        using (var httpClient = new HttpClient())
-        {
-            using (var fileStream = await httpClient.GetStreamAsync(uri))
-            {
-                return Image.FromStream(fileStream);
-            }
-        }
-    }
-
     public async static Task<MemoryStream> DownloadImageAsync(Uri imageUrl)
     {
         using (HttpClient httpClient = new HttpClient())
@@ -47,5 +29,34 @@ public static class Helper
         config.AppSettings.Settings[key].Value = value;
         config.Save(ConfigurationSaveMode.Modified);
         ConfigurationManager.RefreshSection("appSettings");
+    }
+
+    public static void OpenBrowser(string url)
+    {
+        try
+        {
+            Process.Start(url);
+        }
+        catch
+        {
+            // hack because of this: https://github.com/dotnet/corefx/issues/10361
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                url = url.Replace("&", "^&");
+                Process.Start(new ProcessStartInfo("cmd", $"/c start {url}") { CreateNoWindow = true });
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                Process.Start("xdg-open", url);
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                Process.Start("open", url);
+            }
+            else
+            {
+                throw;
+            }
+        }
     }
 }

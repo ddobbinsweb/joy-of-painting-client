@@ -1,42 +1,24 @@
 ﻿using joy_of_painting_client.Models;
 using joy_of_painting_client.Responses;
 using Spectre.Console;
-using Spectre.Console.Rendering;
-using System.Reflection.Metadata.Ecma335;
 
 namespace joy_of_painting_client.Game
 {
     public static class GameLayout
     {
-        // private static Layout _layout;
-        public static void Setup()
+        public static async Task Setup()
         {
-            // create layout
-            // Create the layout
-            //  _layout = new Layout("Top");
-            // .SplitRows(new Layout("Top"));
-
-
-            // Update the Top column
-            //  Update("Top", Header());
-            // Update("Center", Center());
-
-            // Render the layout
-            InsertHeader();
             // add Header
-            // AnsiConsole.Write(_layout);
-
+            await InsertHeader();
         }
-        public static async void InsertHeader()
+        public static async Task InsertHeader()
         {
             AnsiConsole.Write(await HeaderAsync());
         }
         private static async Task<Panel> HeaderAsync()
         {
-            Markup userContent;
-            Panel header;
-            var userkey = GameSettings.GetUserKey();
-            if (userkey != null)
+            string? userkey = GameSettings.GetUserKey();
+            if (!string.IsNullOrWhiteSpace(userkey))
             {
                 // TODO: move this to app startup and cache values
                 // get Player
@@ -58,7 +40,7 @@ namespace joy_of_painting_client.Game
                     grid.AddRow(
                         $"{userResponse.Item.Name}",
                         $"{userResponse.Item.Pixelations.Sum(x => x.Score)}",
-                        $"[link green] https://jop.revunit.com/profile/{userResponse.Item.Id} [/]"
+                        $"[green] https://jop.revunit.com/profile/{userResponse.Item.Id} [/]"
                     );
 
                     // Write to Console
@@ -78,20 +60,11 @@ namespace joy_of_painting_client.Game
                 .SquareBorder()
                 .Header("[red]Welcome to[/]");
         }
-        private static Panel Center()
-        {
-            return new Panel(Align.Center(new Markup("TODO Insert a Grid with the current users data"), VerticalAlignment.Middle));
-        }
-
-        internal static void Reset()
+        public static async Task Reset()
         {
             AnsiConsole.Clear();
-            Setup();
+            await Setup();
         }
 
-        //public static void Update(string location, IRenderable update)
-        //{
-        //    _layout[location].Update(update);
-        //}
     }
 }

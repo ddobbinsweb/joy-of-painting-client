@@ -5,18 +5,16 @@ namespace joy_of_painting_client.Game;
 
 public static class GameSettings
 {
-
-    public static void Check()
+    public static async Task CheckAsync()
     {
         string? userKey = GetUserKey();
         if (string.IsNullOrEmpty(userKey))
         {
             //TODO: add way to login to get guid
             SetUserInfo();
-            GameLayout.Reset();
+            await GameLayout.Reset();
         }
     }
-
 
     public static string? GetUserKey()
     {
@@ -27,7 +25,7 @@ public static class GameSettings
     {
         string menu = AnsiConsole.Prompt(
             new SelectionPrompt<string>()
-          .Title("[bold white]--Settings Menu-- [/]")
+          .Title("[bold white]Settings Menu [/] [green] Select a option  [/]")
           .PageSize(10)
           .MoreChoicesText("[grey](Move up and down to reveal more options)[/]")
           .AddChoices("User", "Back")
@@ -41,7 +39,7 @@ public static class GameSettings
         {
             string UserMenu = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
-               .Title("[bold white]--User Menu-- [/]")
+               .Title("[bold white]User Menu[/][green] Select a option [/]")
                .PageSize(10)
                .MoreChoicesText("[grey](Move up and down to reveal more options)[/]")
                .AddChoices("Api Key", "Back"));
@@ -59,9 +57,9 @@ public static class GameSettings
 
     private static void SetUserInfo()
     {
-        if (!AnsiConsole.Confirm("Do you have a Api Key to Play?"))
+        if (!AnsiConsole.Confirm("[green]Do you have a Api Key to Play?[/]"))
         {
-            AnsiConsole.MarkupLine("No Problem! goto: [link green] http://jop.revunit.com[/]");
+            AnsiConsole.MarkupLine("No Problem! goto: [green] http://jop.revunit.com[/]");
             AnsiConsole.MarkupLine("Sign in with your Revunit email.");
             AnsiConsole.MarkupLine("click on you avatar in the top right");
             AnsiConsole.MarkupLine("copy the value from the box");
@@ -80,6 +78,4 @@ public static class GameSettings
 
         AnsiConsole.Clear();
     }
-
-
 }

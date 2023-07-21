@@ -62,7 +62,12 @@ export default function Home() {
       const newCtx = newCanvas.getContext("2d");
       if (newCtx) {
         newCtx.drawImage(img, 0, 0);
-
+        // TODO : do this mo better
+        let api= '';
+        if(key){
+           api = key;
+        }
+        
         // Get the image data from the new canvas in a format that can be submitted to the API (e.g., Blob)
         newCanvas.toBlob((blob) => {
           if (blob) {
@@ -72,6 +77,7 @@ export default function Home() {
               method: "POST",
               body: blob,
               headers: {
+                "X-API-KEY": api,
                 "Content-Type": "image/jpeg", // adjust the content type based on the image format you are using (e.g., 'image/jpeg' for JPEG)
               },
             })

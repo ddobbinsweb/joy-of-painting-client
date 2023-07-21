@@ -12,7 +12,97 @@ public static class Pixelator
 {
     public static async Task PixelateImageAsync()
     {
+        string? userKey = GameSettings.GetUserKey();
+        if (string.IsNullOrEmpty(userKey))
+        {
+            AnsiConsole.WriteLine("User Key not configured");
+            return;
+        }
+        Painting painting = await GetPaintingAsync(userKey);
 
+        if (painting != null)
+        {
+            bool approved = false;
+            while (!approved)
+            {
+                approved = await SubmitPixelation(userKey, painting, approved);
+            }
+
+            if (!AnsiConsole.Confirm("Pixelate another image?"))
+            {
+                AnsiConsole.Clear();
+                return;
+            }
+            else
+            {
+                await PixelateImageAsync();
+            }
+            AnsiConsole.Clear();
+        }
+    }
+
+    public static async Task<List<Brushstroke>> PixelateImageAsync(Painting painting, int size = 20, int failureCount = 0)
+    {
+        List<Brushstroke> brushstrokes = new();
+
+        MemoryStream imageDownload = await Helper.DownloadImageAsync(new Uri(painting.Url));
+
+        Bitmap image = new Bitmap(imageDownload);
+
+        int width = image.Width;
+        int height = image.Height;
+
+        int pixelSize = (int)Math.Ceiling((double)width / size); // Adjust the pixel size as needed
+
+        int order = 0;
+
+        for (int y = 0; y < height; y += pixelSize)
+        {
+            for (int x = 0; x < width; x += pixelSize)
+            {
+                Brushstroke brushstroke = new Brushstroke();
+                brushstroke.Order = order;
+
+                int toX = Math.Min(x + pixelSize, width);
+                int toY = Math.Min(y + pixelSize, height);
+
+                brushstroke.FromX = x;
+                brushstroke.ToX = toX;
+                brushstroke.FromY = y;
+                brushstroke.ToY = toY;
+
+                string color = CalculateAverageColor(image, x, y, toX, toY).ToArgb().ToString("X6");
+                brushstroke.Color = "#" + color;
+
+                brushstroke.Width = toX - x;
+                brushstroke.Height = toY - y;
+
+                brushstrokes.Add(brushstroke);
+
+                order++;
+            }
+        }
+        if (brushstrokes.Count > 1000)
+        {
+            await PixelateImageAsync(painting, size - 2, failureCount + 1);
+        }
+        else
+        {
+
+            RotateBrushstrokes(brushstrokes, width, height);
+
+            MemoryStream previewImageStream = CreateImageStream(width, height, brushstrokes);
+            var previewImage = new CanvasImage(previewImageStream);
+            previewImage.MaxWidth = pixelSize;
+
+            AnsiConsole.Write(previewImage);
+        }
+
+
+        return brushstrokes;
+    }
+    public static async Task<Painting> GetPaintingAsync(string userKey)
+    {
         string findPaintingOption = AnsiConsole.Prompt(
             new SelectionPrompt<string>()
                 .Title("[green] How would you like to find a painting by [/]?")
@@ -21,9 +111,7 @@ public static class Pixelator
                 .AddChoices("Artist", "Category")
                 );
 
-        string? userKey = GameSettings.GetUserKey();
         Painting painting = null;
-
         if (findPaintingOption == "Artist")
         {
             var artistClient = new BaseClient("artist", userKey);
@@ -129,96 +217,11 @@ public static class Pixelator
                             }
                         }
                     }
-
                 }
             }
         }
-
-        if (painting != null)
-        {
-
-
-            bool approved = false;
-            while (!approved)
-            {
-                approved = await SubmitPixelation(userKey, painting, approved);
-            }
-
-
-            if (!AnsiConsole.Confirm("Pixelate another image?"))
-            {
-                AnsiConsole.Clear();
-                return;
-            }
-            else
-            {
-               await PixelateImageAsync();
-            }
-            AnsiConsole.Clear();
-        }
+        return painting;
     }
-
-    public static async Task<List<Brushstroke>> PixelateImageAsync(Painting painting, int size = 20, int failureCount = 0)
-    {
-        List<Brushstroke> brushstrokes = new();
-
-        MemoryStream imageDownload = await Helper.DownloadImageAsync(new Uri(painting.Url));
-
-        Bitmap image = new Bitmap(imageDownload);
-
-        int width = image.Width;
-        int height = image.Height;
-
-        int pixelSize = (int)Math.Ceiling((double)width / size); // Adjust the pixel size as needed
-
-        int order = 0;
-
-        for (int y = 0; y < height; y += pixelSize)
-        {
-            for (int x = 0; x < width; x += pixelSize)
-            {
-                Brushstroke brushstroke = new Brushstroke();
-                brushstroke.Order = order;
-
-                int toX = Math.Min(x + pixelSize, width);
-                int toY = Math.Min(y + pixelSize, height);
-
-                brushstroke.FromX = x;
-                brushstroke.ToX = toX;
-                brushstroke.FromY = y;
-                brushstroke.ToY = toY;
-
-                string color = CalculateAverageColor(image, x, y, toX, toY).ToArgb().ToString("X6");
-                brushstroke.Color = "#" + color;
-
-                brushstroke.Width = toX - x;
-                brushstroke.Height = toY - y;
-
-                brushstrokes.Add(brushstroke);
-
-                order++;
-            }
-        }
-        if (brushstrokes.Count > 1000)
-        {
-                await PixelateImageAsync(painting, size - 2, failureCount + 1);
-        }
-        else
-        {
-
-            RotateBrushstrokes(brushstrokes, width, height);
-
-            MemoryStream previewImageStream = CreateImageStream(width, height, brushstrokes);
-            var previewImage = new CanvasImage(previewImageStream);
-            previewImage.MaxWidth = pixelSize;
-
-            AnsiConsole.Write(previewImage);
-        }
-
-
-        return brushstrokes;
-    }
-
     public static MemoryStream CreateImageStream(int width, int height, List<Brushstroke> brushstrokes)
     {
         Bitmap bitmap = new(width, height);
@@ -301,15 +304,14 @@ public static class Pixelator
             {
                 return size switch
                 {
-                    < 0 => ValidationResult.Error("[red] Pixel Size must be greater than 0 [/]"),
-                    > 100 => ValidationResult.Error("[red] Pixel Size can not be greater than 100 [/]"),
+                    <= 0 => ValidationResult.Error("[red] Pixel Size must be greater than 0 [/]"),
+                    >= 100 => ValidationResult.Error("[red] Pixel Size can not be greater than 100 [/]"),
                     _ => ValidationResult.Success(),
                 };
             }));
         List<Brushstroke> strokes = new();
         await AnsiConsole.Status().StartAsync("Pixelating image...", async ctx =>
         {
-
             strokes = await PixelateImageAsync(painting, pixelSize);
         });
         AnsiConsole.WriteLine($"Pixel Count:{strokes.Count}");
@@ -350,7 +352,7 @@ public static class Pixelator
                 AnsiConsole.Write($"[red] error[/] : {String.Join("", pixelationResponse.ValidationErrors)}");
                 if (AnsiConsole.Confirm("[green] Try Again?[/]"))
                 {
-                   if( await SubmitPixelation(userKey, painting, false))
+                    if (await SubmitPixelation(userKey, painting, false))
                     {
                         // do something
                     }

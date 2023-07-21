@@ -46,5 +46,6 @@ public static class Helper
         Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
         config.AppSettings.Settings[key].Value = value;
         config.Save(ConfigurationSaveMode.Modified);
+        ConfigurationManager.RefreshSection("appSettings");
     }
 }

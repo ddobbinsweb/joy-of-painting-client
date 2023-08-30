@@ -16,7 +16,7 @@ import { ChromePicker } from "react-color";
 import { useDraw } from "./hooks/useDraw";
 
 export default function Home() {
-  const [color, setColor] = useState("#000");
+  const [color, setColor] = useState("#22194D");
   const { canvasRef, onMouseDown, clear } = useDraw(drawLine);
 
   const searchParams = useSearchParams();
@@ -26,7 +26,7 @@ export default function Home() {
     const { x: currX, y: currY } = currentPoint;
     const lineColor = color;
     const lineWidth = 5;
-
+    console.log(color);
     let startPoint = prevPoint ?? currentPoint;
     ctx.beginPath();
     ctx.lineWidth = lineWidth;
@@ -95,6 +95,10 @@ export default function Home() {
     };
   };
 
+  const changeColor = (e:any)=>{
+    setColor(e.hex);
+  }
+
   return (
     <>
       {/* Nav Bar */}
@@ -117,7 +121,7 @@ export default function Home() {
         {/* Left Column */}
         <div className=" bg-gradient-to-r from-cyan-500 to-blue-500 flex justify-center items-center p-5">
           <div className="flex flex-col gap-10 pr-10">
-            <ChromePicker onChange={(e: any) => setColor(e.hex)} />
+            <ChromePicker color={color} onChange={changeColor} />
             <Button onClick={submit} variant="contained">
               Submit
             </Button>

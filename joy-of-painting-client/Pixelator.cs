@@ -4,10 +4,6 @@ using joy_of_painting_client.Responses;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Spectre.Console;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Security.Policy;
-using Color = System.Drawing.Color;
 
 namespace joy_of_painting_client;
 

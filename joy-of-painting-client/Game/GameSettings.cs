@@ -55,6 +55,7 @@ public static class GameSettings
             AnsiConsole.MarkupLine("Sign in with your Revunit email.");
             AnsiConsole.MarkupLine("click on you avatar in the top right");
             AnsiConsole.MarkupLine("copy the value from the box");
+            Helper.OpenBrowser("https://jop.revunit.com/");
             if (!AnsiConsole.Confirm("Ready"))
             {
                 AnsiConsole.Clear();

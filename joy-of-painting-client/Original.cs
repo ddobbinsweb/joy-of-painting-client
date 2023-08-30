@@ -5,9 +5,9 @@ namespace joy_of_painting_client
 {
     public static class Original
     {
-        //TODO: get from app settings
-       // private static string _originalSite = "https://joy-of-painting-client.vercel.app/";
-        private static string _originalSite = "http://localhost:3000/";
+        private static string? _originalSite = GameSettings.GetCanvasUrl();
+   
+
         public static void Create()
         {
             string? userKey = GameSettings.GetUserKey();

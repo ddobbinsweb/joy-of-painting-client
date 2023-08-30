@@ -19,7 +19,9 @@ public static class GameSettings
     {
         return ConfigurationManager.AppSettings["userKey"];
     }
-
+    public static string? GetCanvasUrl(){
+         return ConfigurationManager.AppSettings["canvasURL"];
+    }
     public static void Menu()
     {
         string menu = AnsiConsole.Prompt(

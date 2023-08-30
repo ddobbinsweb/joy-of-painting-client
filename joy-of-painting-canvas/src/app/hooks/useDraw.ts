@@ -58,3 +58,4 @@ export const useDraw = (
 
   return { canvasRef, onMouseDown, clear };
 };
+

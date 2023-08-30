@@ -41,6 +41,7 @@ do
             AnsiConsole.WriteLine("GOOD BYE");
             break;
         default:
+            AnsiConsole.WriteLine("[red] Invalid option! please try again [/]");
             break;
     }
  await GameLayout.Reset();

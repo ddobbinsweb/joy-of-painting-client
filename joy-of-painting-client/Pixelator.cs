@@ -328,6 +328,7 @@ public static class Pixelator
             }
             else
             {
+                
                 MemoryStream pixalateImage = await Helper.DownloadImageAsync(new Uri(pixelationResponse.Url));
 
                 CanvasImage image = new(pixalateImage);

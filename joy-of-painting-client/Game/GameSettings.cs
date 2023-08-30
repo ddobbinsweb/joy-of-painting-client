@@ -10,7 +10,6 @@ public static class GameSettings
         string? userKey = GetUserKey();
         if (string.IsNullOrEmpty(userKey))
         {
-            //TODO: add way to login to get guid
             SetUserInfo();
             await GameLayout.Reset();
         }
@@ -20,7 +19,9 @@ public static class GameSettings
     {
         return ConfigurationManager.AppSettings["userKey"];
     }
-
+    public static string? GetCanvasUrl(){
+         return ConfigurationManager.AppSettings["canvasURL"];
+    }
     public static void Menu()
     {
         string menu = AnsiConsole.Prompt(
@@ -31,28 +32,19 @@ public static class GameSettings
           .AddChoices("User", "Back")
           );
 
-        if (menu == "Back")
-        {
-            return;
-        }
-        else
-        {
-            string UserMenu = AnsiConsole.Prompt(
-                new SelectionPrompt<string>()
-               .Title("[bold white]User Menu[/][green] Select a option [/]")
-               .PageSize(10)
-               .MoreChoicesText("[grey](Move up and down to reveal more options)[/]")
-               .AddChoices("Api Key", "Back"));
+        if (menu == "Back") return;
 
-            if (UserMenu == "Back")
-            {
-                Menu();
-            }
-            else
-            {
-                SetUserInfo();
-            }
-        }
+
+        string UserMenu = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+           .Title("[bold white]User Menu[/][green] Select a option [/]")
+           .PageSize(10)
+           .MoreChoicesText("[grey](Move up and down to reveal more options)[/]")
+           .AddChoices("Api Key", "Back"));
+
+        if (UserMenu == "Back") Menu();
+
+        SetUserInfo();
     }
 
     private static void SetUserInfo()
@@ -68,7 +60,7 @@ public static class GameSettings
                 AnsiConsole.Clear();
                 return;
             }
-        
+
 
         }
         AnsiConsole.MarkupLine("Great!");

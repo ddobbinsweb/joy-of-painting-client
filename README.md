@@ -1,4 +1,6 @@
+🏆 2023 Revunit Best Game Client Winner
 # joy-of-painting-client
+
 .net console app to submit pixelations and view leader board
 and nextjs app to create and submit original works of art.
 

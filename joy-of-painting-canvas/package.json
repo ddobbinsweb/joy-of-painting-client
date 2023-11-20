@@ -20,7 +20,7 @@
     "autoprefixer": "10.4.14",
     "eslint": "8.49.0",
     "eslint-config-next": "13.4.19",
-    "next": "13.4.19",
+    "next": "14.0.3",
     "postcss": "8.4.26",
     "react": "^17.0.0 || ^18.0.0",
     "react-color": "^2.19.3",
